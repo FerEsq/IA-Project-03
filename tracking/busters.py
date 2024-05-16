@@ -45,17 +45,20 @@ def getNoisyDistance(pos1, pos2):
     return max(0, distance + util.sample(SONAR_NOISE_PROBS, SONAR_NOISE_VALUES))
 
 observationDistributions = {}
-def getObservationProbability(noisyDistance, trueDistance):
+def getObservationDistribution(noisyDistance):
     """
-    Returns the probability P( noisyDistance | trueDistance ).
+    Returns the factor P( noisyDistance | TrueDistances ), the likelihood of the provided noisyDistance
+    conditioned upon all the possible true distances that could have generated it.
     """
     global observationDistributions
+    if noisyDistance == None:
+        return util.Counter()
     if noisyDistance not in observationDistributions:
         distribution = util.Counter()
         for error , prob in zip(SONAR_NOISE_VALUES, SONAR_NOISE_PROBS):
             distribution[max(1, noisyDistance - error)] += prob
         observationDistributions[noisyDistance] = distribution
-    return observationDistributions[noisyDistance][trueDistance]
+    return observationDistributions[noisyDistance]
 
 ###################################################
 # YOUR INTERFACE TO THE PACMAN WORLD: A GameState #
@@ -91,12 +94,12 @@ class GameState:
         else:
             return GhostRules.getLegalActions( self, agentIndex )
 
-    def getResult( self, agentIndex, action):
+    def generateSuccessor( self, agentIndex, action):
         """
-        Returns the state after the specified agent takes the action.
+        Returns the successor state after the specified agent takes the action.
         """
         # Check that successors exist
-        if self.isWin() or self.isLose(): raise Exception('Can\'t generate a result of a terminal state.')
+        if self.isWin() or self.isLose(): raise Exception('Can\'t generate a successor of a terminal state.')
 
         # Copy current state
         state = GameState(self)
@@ -129,11 +132,11 @@ class GameState:
     def getLegalPacmanActions( self ):
         return self.getLegalActions( 0 )
 
-    def getPacmanResult( self, action ):
+    def generatePacmanSuccessor( self, action ):
         """
-        Generates the result state after the specified pacman action
+        Generates the successor state after the specified pacman move
         """
-        return self.getResult( 0, action )
+        return self.generateSuccessor( 0, action )
 
     def getPacmanState( self ):
         """
@@ -249,8 +252,6 @@ class GameState:
         """
         Allows two states to be compared.
         """
-        if other is None:
-            return False
         return self.data == other.data
 
     def __hash__( self ):
@@ -336,7 +337,7 @@ class PacmanRules:
         """
         legal = PacmanRules.getLegalActions( state )
         if action not in legal:
-            raise Exception("Illegal action {}".format(action))
+            raise "Illegal action", action
 
         pacmanState = state.data.agentStates[0]
 
@@ -546,10 +547,10 @@ def runGames( layout, pacman, ghosts, display, numGames, maxMoves=-1):
         scores = [game.state.getScore() for game in games]
         wins = [game.state.isWin() for game in games]
         winRate = wins.count(True)/ float(len(wins))
-        print('Average Score:', sum(scores) / float(len(scores)))
-        print('Scores:       ', ', '.join([str(score) for score in scores]))
-        print('Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate))
-        print('Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
+        print 'Average Score:', sum(scores) / float(len(scores))
+        print 'Scores:       ', ', '.join([str(score) for score in scores])
+        print 'Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
+        print 'Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins])
 
     return games
 

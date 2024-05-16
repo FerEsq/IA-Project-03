@@ -13,7 +13,6 @@
 
 
 import util
-from util import raiseNotDefined
 from game import Agent
 from game import Directions
 from keyboardAgents import KeyboardAgent
@@ -45,14 +44,14 @@ class KeyboardInference(inference.InferenceModule):
         for p in self.legalPositions: self.beliefs[p] = 1.0
         self.beliefs.normalize()
 
-    def observeUpdate(self, observation, gameState):
+    def observe(self, observation, gameState):
         noisyDistance = observation
+        emissionModel = busters.getObservationDistribution(noisyDistance)
         pacmanPosition = gameState.getPacmanPosition()
         allPossible = util.Counter()
         for p in self.legalPositions:
             trueDistance = util.manhattanDistance(p, pacmanPosition)
-            if noisyDistance != None and \
-                    busters.getObservationProbability(noisyDistance, trueDistance) > 0:
+            if emissionModel[trueDistance] > 0:
                 allPossible[p] = 1.0
         allPossible.normalize()
         self.beliefs = allPossible
@@ -68,10 +67,7 @@ class BustersAgent:
     "An agent that tracks and displays its beliefs about ghost positions."
 
     def __init__( self, index = 0, inference = "ExactInference", ghostAgents = None, observeEnable = True, elapseTimeEnable = True):
-        try:
-            inferenceType = util.lookup(inference, globals())
-        except Exception:
-            inferenceType = util.lookup('inference.' + inference, globals())
+        inferenceType = util.lookup(inference, globals())
         self.inferenceModules = [inferenceType(a) for a in ghostAgents]
         self.observeEnable = observeEnable
         self.elapseTimeEnable = elapseTimeEnable
@@ -98,7 +94,7 @@ class BustersAgent:
                 inf.elapseTime(gameState)
             self.firstMove = False
             if self.observeEnable:
-                inf.observe(gameState)
+                inf.observeState(gameState)
             self.ghostBeliefs[index] = inf.getBeliefDistribution()
         self.display.updateDistributions(self.ghostBeliefs)
         return self.chooseAction(gameState)
@@ -127,20 +123,38 @@ from game import Directions
 class GreedyBustersAgent(BustersAgent):
     "An agent that charges the closest ghost."
 
-    def registerInitialState(self, gameState: busters.GameState):
+    def registerInitialState(self, gameState):
         "Pre-computes the distance between every two points."
         BustersAgent.registerInitialState(self, gameState)
         self.distancer = Distancer(gameState.data.layout, False)
-    
-    ########### ########### ###########
-    ########### QUESTION 8  ###########
-    ########### ########### ###########
 
-    def chooseAction(self, gameState: busters.GameState):
+    def chooseAction(self, gameState):
         """
         First computes the most likely position of each ghost that has
         not yet been captured, then chooses an action that brings
-        Pacman closest to the closest ghost (according to mazeDistance!).
+        Pacman closer to the closest ghost (according to mazeDistance!).
+
+        To find the mazeDistance between any two positions, use:
+          self.distancer.getDistance(pos1, pos2)
+
+        To find the successor position of a position after an action:
+          successorPosition = Actions.getSuccessor(position, action)
+
+        livingGhostPositionDistributions, defined below, is a list of
+        util.Counter objects equal to the position belief
+        distributions for each of the ghosts that are still alive.  It
+        is defined based on (these are implementation details about
+        which you need not be concerned):
+
+          1) gameState.getLivingGhosts(), a list of booleans, one for each
+             agent, indicating whether or not the agent is alive.  Note
+             that pacman is always agent 0, so the ghosts are agents 1,
+             onwards (just as before).
+
+          2) self.ghostBeliefs, the list of belief distributions for each
+             of the ghosts (including ghosts that are not alive).  The
+             indices into this list should be 1 less than indices into the
+             gameState.getLivingGhosts() list.
         """
         pacmanPosition = gameState.getPacmanPosition()
         legal = [a for a in gameState.getLegalPacmanActions()]
@@ -149,5 +163,4 @@ class GreedyBustersAgent(BustersAgent):
             [beliefs for i, beliefs in enumerate(self.ghostBeliefs)
              if livingGhosts[i+1]]
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
-        "*** END YOUR CODE HERE ***"
+        util.raiseNotDefined()

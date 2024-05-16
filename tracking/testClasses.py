@@ -17,29 +17,6 @@ import inspect
 import re
 import sys
 
-# BEGIN SOLUTION NO PROMPT
-def invertLayout(layout_text):
-    # Keep lower left fix as this is hardcoded in PositionSearchProblem (gah)
-    # as the goal.
-    lines = [l.strip() for l in layout_text.split('\n')]
-    h = len(lines)
-    w = len(lines[0])
-    tiles = {}
-    for y, line in enumerate(lines):
-        for x, tile in enumerate(line):
-            # (x,y)
-            # (0,0) -> (h,w)
-            # (0,h) -> (0,w)
-            tiles[h-1-y, w-1-x] = tile
-
-    new_lines = []
-    for y in range(w):
-        new_lines.append("")
-        for x in range(h):
-            new_lines[-1] += tiles[x,y]
-    #return layout_text
-    return "\n".join(new_lines)
-# END SOLUTION NO PROMPT
 
 # Class which models a question in a project.  Note that questions have a
 # maximum number of points they are worth, and are composed of a series of
@@ -47,7 +24,7 @@ def invertLayout(layout_text):
 class Question(object):
 
     def raiseNotDefined(self):
-        print('Method not implemented: %s' % inspect.stack()[1][3])
+        print 'Method not implemented: %s' % inspect.stack()[1][3]
         sys.exit(1)
 
     def __init__(self, questionDict, display):
@@ -84,23 +61,6 @@ class PassAllTestsQuestion(Question):
         else:
             grades.assignFullCredit()
 
-class ExtraCreditPassAllTestsQuestion(Question):
-    def __init__(self, questionDict, display):
-        Question.__init__(self, questionDict, display)
-        self.extraPoints = int(questionDict['extra_points'])
-
-    def execute(self, grades):
-        # TODO: is this the right way to use grades?  The autograder doesn't seem to use it.
-        testsFailed = False
-        grades.assignZeroCredit()
-        for _, f in self.testCases:
-            if not f(grades):
-                testsFailed = True
-        if testsFailed:
-            grades.fail("Tests failed.")
-        else:
-            grades.assignFullCredit()
-            grades.addPoints(self.extraPoints)
 
 # Question in which predict credit is given for test cases with a ``points'' property.
 # All other tests are mandatory and must be passed.
@@ -163,15 +123,12 @@ class NumberPassedQuestion(Question):
 
 
 
-# BEGIN SOLUTION NO PROMPT
-from testParser import emitTestDict
-# END SOLUTION NO PROMPT
 
 # Template modeling a generic test case
 class TestCase(object):
 
     def raiseNotDefined(self):
-        print('Method not implemented: %s' % inspect.stack()[1][3])
+        print 'Method not implemented: %s' % inspect.stack()[1][3]
         sys.exit(1)
 
     def getPath(self):
@@ -230,11 +187,3 @@ class TestCase(object):
     def addMessage(self, message):
         self.messages.extend(message.split('\n'))
 
-    # BEGIN SOLUTION NO PROMPT
-    def createPublicVersion(self):
-        self.raiseNotDefined()
-
-    def emitPublicVersion(self, filePath):
-        with open(filePath, 'w') as handle:
-            emitTestDict(self.testDict, handle)
-    # END SOLUTION NO PROMPT
