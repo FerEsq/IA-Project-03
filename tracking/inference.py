@@ -121,49 +121,29 @@ class ExactInference(InferenceModule):
         self.beliefs.normalize()
 
     def observe(self, observation, gameState):
-        """
-        Updates beliefs based on the distance observation and Pacman's position.
+        noisyDistance = observation  #La noisy distance observada a un fantasma
+        pacmanPosition = gameState.getPacmanPosition()  #Posicion actual de Pacman
 
-        The noisyDistance is the estimated Manhattan distance to the ghost you
-        are tracking.
+        if noisyDistance is None:
+            #Caso especial: El fantasma fue capturado
+            allPossible = util.Counter()
+            jailPosition = self.getJailPosition()  #Obtener la posicion de la celda de prision
+            allPossible[jailPosition] = 1.0  #Colocar todas las creencias en la posicion de la celda de prision
+        else:
+            #Actualizar las creencias con la nueva observacion
+            emissionModel = busters.getObservationDistribution(noisyDistance)  #Modelo de emision basado en la distancia observada
+            allPossible = util.Counter()
+            for p in self.legalPositions:  #Iterar sobre todas las posiciones legales
+                trueDistance = util.manhattanDistance(p, pacmanPosition)  #Calcular la distancia de Manhattan desde Pacman hasta la posicion
+                if trueDistance in emissionModel:  #Verificar si la distancia verdadera esta en el modelo de emision
+                    #Actualizar la creencia para esta posicion multiplicando la creencia previa por 
+                    #la probabilidad en el modelo de emision
+                    allPossible[p] = self.beliefs[p] * emissionModel[trueDistance]
 
-        The emissionModel below stores the probability of the noisyDistance for
-        any true distance you supply. That is, it stores P(noisyDistance |
-        TrueDistance).
+        allPossible.normalize()  #Normalizar las creencias para que sumen a 1
+        self.beliefs = allPossible  #Guardar las creencias actualizadas
 
-        self.legalPositions is a list of the possible ghost positions (you
-        should only consider positions that are in self.legalPositions).
 
-        A correct implementation will handle the following special case:
-          *  When a ghost is captured by Pacman, all beliefs should be updated
-             so that the ghost appears in its prison cell, position
-             self.getJailPosition()
-
-             You can check if a ghost has been captured by Pacman by
-             checking if it has a noisyDistance of None (a noisy distance
-             of None will be returned if, and only if, the ghost is
-             captured).
-        """
-        noisyDistance = observation
-        emissionModel = busters.getObservationDistribution(noisyDistance)
-        pacmanPosition = gameState.getPacmanPosition()
-
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
-        # Replace this code with a correct observation update
-        # Be sure to handle the "jail" edge case where the ghost is eaten
-        # and noisyDistance is None
-        allPossible = util.Counter()
-        for p in self.legalPositions:
-            trueDistance = util.manhattanDistance(p, pacmanPosition)
-            if emissionModel[trueDistance] > 0:
-                allPossible[p] = 1.0
-
-        "*** END YOUR CODE HERE ***"
-
-        allPossible.normalize()
-        self.beliefs = allPossible
 
     def elapseTime(self, gameState):
         """
